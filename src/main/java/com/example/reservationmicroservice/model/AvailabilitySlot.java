@@ -18,7 +18,7 @@ import java.util.List;
 public class AvailabilitySlot {
 
     @Id
-    private ObjectId id;
+    private String id;
 
     @Field
     private LocalDate start;

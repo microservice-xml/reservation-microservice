@@ -17,7 +17,7 @@ import java.time.LocalDate;
 public class Accommodation {
 
     @Id
-    private ObjectId id;
+    private String id;
 
     @Field
     private String city;

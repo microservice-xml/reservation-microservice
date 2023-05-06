@@ -16,7 +16,7 @@ import java.time.LocalDate;
 @Document
 public class Reservation {
     @Id
-    private ObjectId id;
+    private String id;
 
     @Field
     private LocalDate start;
@@ -31,5 +31,8 @@ public class Reservation {
     private ReservationStatus status;
 
     @Field
-    private ObjectId slotId;
+    private String slotId;
+
+    @Field
+    private int numberOfGuests;
 }
