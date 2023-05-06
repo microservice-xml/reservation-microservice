@@ -32,6 +32,9 @@ public class AvailabilitySlotService {
 
     public void edit(AvailabilitySlot availabilitySlot) {
         isDateRangeValidForEdit(availabilitySlot);
+        if (availabilitySlot.getReservations().size() != 0) {
+            throw new AvailabilitySlotException("Can't edit availability slot that already has reservations");
+        }
         var oldAvailabilitySlot = availabilitySlotRepository.findById(availabilitySlot.getId()).orElseThrow(() -> new AvailabilitySlotException("Slot with this id doesn't exist"));
         oldAvailabilitySlot.setPrice(availabilitySlot.getPrice());
         oldAvailabilitySlot.setStart(availabilitySlot.getStart());
