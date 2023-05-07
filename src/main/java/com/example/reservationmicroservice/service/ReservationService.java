@@ -1,8 +1,10 @@
 package com.example.reservationmicroservice.service;
 
 import com.example.reservationmicroservice.exception.CancelException;
+import com.example.reservationmicroservice.model.AvailabilitySlot;
 import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.model.ReservationStatus;
+import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.example.reservationmicroservice.repository.ReservationRepository;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReservationService {
     private final ReservationRepository reservationRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
 
     public void create(Reservation reservation) {
         reservation.setStatus(ReservationStatus.PENDING);
@@ -33,11 +36,37 @@ public class ReservationService {
     }
 
     public void accept(String id) {
-        //TODO reduce availability slot
         Reservation reservation = findById(id);
         reservation.setStatus(ReservationStatus.ACCEPTED);
+        addReservationInAvailabilitySlot(reservation);
         reservationRepository.save(reservation);
         rejectAllOther(reservation);
+    }
+
+    private void addReservationInAvailabilitySlot(Reservation reservation){
+        //TODO reduce availability slot, add some check
+        AvailabilitySlot as = availabilitySlotRepository.findById(reservation.getSlotId()).get();
+        as.getReservations().add(reservation);
+        availabilitySlotRepository.save(as);
+    }
+
+    private void removeReservationFromAvailabilitySlot(Reservation reservation) throws CancelException{
+        AvailabilitySlot as = availabilitySlotRepository.findById(reservation.getSlotId()).get();
+
+        int forDelete = -1;
+        for(int i = 0 ; i < as.getReservations().size(); i++){
+            if(as.getReservations().get(i).equals(reservation.getId())){
+                forDelete=i;
+                return;
+            }
+        }
+
+        if(forDelete!=-1) {
+            as.getReservations().remove(forDelete);
+            availabilitySlotRepository.save(as);
+        }else{
+            throw new CancelException("Reservation with ID: "+reservation.getId()+" not exists.");
+        }
     }
 
     private void rejectAllOther(Reservation reservation) {
@@ -59,17 +88,20 @@ public class ReservationService {
     private void cancelAccepted(Reservation reservation) throws CancelException {
         if(reservation.getStatus().equals(ReservationStatus.DECLINED))
             return;
-        if(reservation.getStart().isAfter(LocalDate.now().plusDays(1)))
+        if(reservation.getStart().isAfter(LocalDate.now().plusDays(1))) {
             //TODO increment numberOfCancel in User
+
             //TODO make availability slot
+            removeReservationFromAvailabilitySlot(reservation);
             reservationRepository.deleteById(reservation.getId());
+        }
         else
-            throw new CancelException();
+            throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
     }
 
     public void createAuto(Reservation reservation) {
-        //TODO reduce availability slot
         reservation.setStatus(ReservationStatus.ACCEPTED);
+        addReservationInAvailabilitySlot(reservation);
         reservationRepository.save(reservation);
     }
 
