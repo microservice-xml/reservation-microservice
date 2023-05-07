@@ -33,6 +33,7 @@ public class ReservationService {
     }
 
     public void accept(String id) {
+        //TODO reduce availability slot
         Reservation reservation = findById(id);
         reservation.setStatus(ReservationStatus.ACCEPTED);
         reservationRepository.save(reservation);
@@ -64,5 +65,17 @@ public class ReservationService {
             reservationRepository.deleteById(reservation.getId());
         else
             throw new CancelException();
+    }
+
+    public void createAuto(Reservation reservation) {
+        //TODO reduce availability slot
+        reservation.setStatus(ReservationStatus.ACCEPTED);
+        reservationRepository.save(reservation);
+    }
+
+    public void reject(String id) {
+        Reservation res = findById(id);
+        res.setStatus(ReservationStatus.DECLINED);
+        reservationRepository.save(res);
     }
 }

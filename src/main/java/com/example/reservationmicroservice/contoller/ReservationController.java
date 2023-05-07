@@ -36,8 +36,8 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.OK).body(reservationService.findAll());
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity acceptReservation(@PathVariable String id){
+    @PutMapping("/accept/{id}")
+    public ResponseEntity acceptReservationManual(@PathVariable String id){
         try{
             reservationService.accept(id);
             return ResponseEntity.status(HttpStatus.OK).body("Reservation accepted.");
@@ -45,6 +45,27 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Try again later...");
         }
     }
+
+    @PutMapping("/reject/{id}")
+    public ResponseEntity rejectRequest(@PathVariable String id){
+        try{
+            reservationService.reject(id);
+            return ResponseEntity.status(HttpStatus.OK).body("Reservation rejected.");
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Try again later...");
+        }
+    }
+
+    @PostMapping("/auto")
+    public ResponseEntity acceptReservationAuto(@RequestBody Reservation reservation){
+        try{
+            reservationService.createAuto(reservation);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Created.");
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Please try again later");
+        }
+    }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity cancel(@PathVariable String id){
