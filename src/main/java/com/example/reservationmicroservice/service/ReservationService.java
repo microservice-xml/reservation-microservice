@@ -67,7 +67,7 @@ public class ReservationService {
             return;
 
         for(var res : slot.getReservations()){
-            if((reservation.getStart().isAfter(res.getStart()) && reservation.getStart().isBefore(res.getEnd())) || (reservation.getEnd().isAfter(res.getStart()) && reservation.getEnd().isBefore(res.getEnd())))
+            if((reservation.getStart().plusDays(1).isAfter(res.getStart()) && reservation.getStart().isBefore(res.getEnd())) || (reservation.getEnd().isAfter(res.getStart()) && reservation.getEnd().minusDays(1).isBefore(res.getEnd())) || (reservation.getStart().equals(res.getStart())) && reservation.getEnd().equals(res.getEnd()) || (reservation.getStart().isBefore(res.getStart())) && reservation.getEnd().isAfter(res.getEnd()))
                 throw new AvailabilitySlotException("Some reservation already exists");
         }
     }
