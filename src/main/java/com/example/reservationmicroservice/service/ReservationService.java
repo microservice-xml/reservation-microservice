@@ -1,6 +1,8 @@
 package com.example.reservationmicroservice.service;
 
+import com.example.reservationmicroservice.exception.AvailabilitySlotException;
 import com.example.reservationmicroservice.exception.CancelException;
+import com.example.reservationmicroservice.exception.ReservationException;
 import com.example.reservationmicroservice.model.AvailabilitySlot;
 import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.model.ReservationStatus;
@@ -23,8 +25,15 @@ public class ReservationService {
     private final AvailabilitySlotRepository availabilitySlotRepository;
 
     public void create(Reservation reservation) {
+        isDateRangeInSlot(reservation);
         reservation.setStatus(ReservationStatus.PENDING);
         reservationRepository.save(reservation);
+    }
+
+    public void isDateRangeInSlot(Reservation reservation){
+        AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
+        if(!((reservation.getStart().plusDays(1).isAfter(slot.getStart()) && reservation.getStart().isBefore(slot.getEnd())) && (reservation.getEnd().isAfter(slot.getStart()) && reservation.getEnd().minusDays(1).isBefore(slot.getEnd()))))
+            throw new ReservationException("Reservation daterange is out of availability slot daterange.");
     }
 
     public Reservation findById(String id) {
@@ -45,28 +54,28 @@ public class ReservationService {
 
     private void addReservationInAvailabilitySlot(Reservation reservation){
         //TODO reduce availability slot, add some check
+        checkOverlapping(reservation);
         AvailabilitySlot as = availabilitySlotRepository.findById(reservation.getSlotId()).get();
         as.getReservations().add(reservation);
         availabilitySlotRepository.save(as);
     }
 
+    private void checkOverlapping(Reservation reservation) {
+        AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
+
+        if(slot.getReservations().isEmpty())
+            return;
+
+        for(var res : slot.getReservations()){
+            if((reservation.getStart().isAfter(res.getStart()) && reservation.getStart().isBefore(res.getEnd())) || (reservation.getEnd().isAfter(res.getStart()) && reservation.getEnd().isBefore(res.getEnd())))
+                throw new AvailabilitySlotException("Some reservation already exists");
+        }
+    }
+
     private void removeReservationFromAvailabilitySlot(Reservation reservation) throws CancelException{
         AvailabilitySlot as = availabilitySlotRepository.findById(reservation.getSlotId()).get();
-
-        int forDelete = -1;
-        for(int i = 0 ; i < as.getReservations().size(); i++){
-            if(as.getReservations().get(i).equals(reservation.getId())){
-                forDelete=i;
-                return;
-            }
-        }
-
-        if(forDelete!=-1) {
-            as.getReservations().remove(forDelete);
-            availabilitySlotRepository.save(as);
-        }else{
-            throw new CancelException("Reservation with ID: "+reservation.getId()+" not exists.");
-        }
+        as.getReservations().remove(reservation);
+        availabilitySlotRepository.save(as);
     }
 
     private void rejectAllOther(Reservation reservation) {
@@ -100,14 +109,20 @@ public class ReservationService {
     }
 
     public void createAuto(Reservation reservation) {
+        isDateRangeInSlot(reservation);
         reservation.setStatus(ReservationStatus.ACCEPTED);
-        addReservationInAvailabilitySlot(reservation);
-        reservationRepository.save(reservation);
+        checkOverlapping(reservation);
+        Reservation res = reservationRepository.save(reservation);
+        addReservationInAvailabilitySlot(res);
     }
 
     public void reject(String id) {
         Reservation res = findById(id);
         res.setStatus(ReservationStatus.DECLINED);
         reservationRepository.save(res);
+    }
+
+    public List<Reservation> findAllByStatus(ReservationStatus status) {
+        return reservationRepository.findAllByStatus(status);
     }
 }

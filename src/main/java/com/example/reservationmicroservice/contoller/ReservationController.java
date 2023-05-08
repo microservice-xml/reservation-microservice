@@ -1,6 +1,7 @@
 package com.example.reservationmicroservice.contoller;
 
 import com.example.reservationmicroservice.model.Reservation;
+import com.example.reservationmicroservice.model.ReservationStatus;
 import com.example.reservationmicroservice.repository.ReservationRepository;
 import com.example.reservationmicroservice.service.ReservationService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,12 +19,12 @@ import java.time.LocalDate;
 public class ReservationController {
     private final ReservationService reservationService;
     @PostMapping
-    public ResponseEntity create(@RequestBody Reservation reservation){
+    public ResponseEntity createRequest(@RequestBody Reservation reservation){
         try{
             reservationService.create(reservation);
             return ResponseEntity.status(HttpStatus.CREATED).body("Created.");
         }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Please try again later");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Please try again later...");
         }
     }
 
@@ -36,14 +38,19 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.OK).body(reservationService.findAll());
     }
 
+    @GetMapping("/status/{status}")
+    public ResponseEntity findAllByStatus(@PathVariable ReservationStatus status) {
+        List<Reservation> reservations = reservationService.findAllByStatus(status);
+        if(reservations.isEmpty())
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("List is empty.");
+        else
+            return ResponseEntity.status(HttpStatus.OK).body(reservationService.findAllByStatus(status));
+    }
+
     @PutMapping("/accept/{id}")
     public ResponseEntity acceptReservationManual(@PathVariable String id){
-        try{
-            reservationService.accept(id);
-            return ResponseEntity.status(HttpStatus.OK).body("Reservation accepted.");
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Try again later...");
-        }
+        reservationService.accept(id);
+        return ResponseEntity.status(HttpStatus.OK).body("Reservation accepted.");
     }
 
     @PutMapping("/reject/{id}")
@@ -58,12 +65,8 @@ public class ReservationController {
 
     @PostMapping("/auto")
     public ResponseEntity acceptReservationAuto(@RequestBody Reservation reservation){
-        try{
-            reservationService.createAuto(reservation);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Created.");
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Please try again later");
-        }
+        reservationService.createAuto(reservation);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Created.");
     }
 
 
@@ -76,11 +79,4 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
-
-//    @GetMapping(value = "/test/{id}")
-//    public ResponseEntity test(@PathVariable String id){
-//        Reservation res = reservationService.findById(id);
-//        return ResponseEntity.status(HttpStatus.CREATED).body(reservationRepository.allForReject(res.getStart(),res.getEnd()));
-//    }
-
 }
