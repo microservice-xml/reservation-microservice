@@ -39,7 +39,7 @@ public class AvailabilitySlotService {
 
     public void edit(AvailabilitySlot availabilitySlot) {
         isDateRangeValidForEdit(availabilitySlot);
-        if (availabilitySlot.getReservations().size() != 0) {
+        if (availabilitySlot.getReservations() != null && availabilitySlot.getReservations().size() != 0) {
             throw new AvailabilitySlotException("Can't edit availability slot that already has reservations");
         }
         var oldAvailabilitySlot = availabilitySlotRepository.findById(availabilitySlot.getId()).orElseThrow(() -> new AvailabilitySlotException("Slot with this id doesn't exist"));
@@ -53,6 +53,8 @@ public class AvailabilitySlotService {
         var availabilitySlots = availabilitySlotRepository.findAll();
         for (AvailabilitySlot as : availabilitySlots) {
             if (areDatesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && !as.getId().equals(availabilitySlot.getId())) {
+                System.out.println(as.getId());
+                System.out.println(availabilitySlot.getId());
                 throw new AvailabilitySlotException("Date range of the slot you want to create overlaps with an existing one!");
             }
         }
@@ -79,5 +81,13 @@ public class AvailabilitySlotService {
             if (valid) validAccommodation.add(as.getAccommodationId());
         }
         return validAccommodation;
+    }
+
+    public List<AvailabilitySlot> getAllByAccommodationId(Long accommodationId) {
+        var availabilitySlots = availabilitySlotRepository.findByAccommodationId(accommodationId);
+        if (availabilitySlots.size() == 0) {
+            throw new AvailabilitySlotException("There are not availability slots for this accommodation!");
+        }
+        return availabilitySlots;
     }
 }

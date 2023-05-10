@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/slot")
+@RequestMapping("/availability-slot")
 public class AvailabilitySlotController {
     private final AvailabilitySlotService availabilitySlotService;
 
@@ -23,5 +23,11 @@ public class AvailabilitySlotController {
     public ResponseEntity edit(@RequestBody AvailabilitySlot availabilitySlot) {
         availabilitySlotService.edit(availabilitySlot);
         return ResponseEntity.status(HttpStatus.OK).body("Availability slot updated successfully.");
+    }
+
+    @GetMapping("/accommodation/{accommodationId}")
+    public ResponseEntity getAllByAccommodationId(@PathVariable Long accommodationId) {
+        var availabilitySlots = availabilitySlotService.getAllByAccommodationId(accommodationId);
+        return ResponseEntity.status(HttpStatus.OK).body(availabilitySlots);
     }
 }
