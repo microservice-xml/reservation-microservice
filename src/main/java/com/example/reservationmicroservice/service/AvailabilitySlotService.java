@@ -53,8 +53,6 @@ public class AvailabilitySlotService {
         var availabilitySlots = availabilitySlotRepository.findAll();
         for (AvailabilitySlot as : availabilitySlots) {
             if (areDatesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && !as.getId().equals(availabilitySlot.getId())) {
-                System.out.println(as.getId());
-                System.out.println(availabilitySlot.getId());
                 throw new AvailabilitySlotException("Date range of the slot you want to create overlaps with an existing one!");
             }
         }
