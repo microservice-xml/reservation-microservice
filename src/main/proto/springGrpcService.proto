@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+package rs.ac.uns.ftn.grpc;
+import "model.proto";
+
+service SpringGrpcService {
+  rpc communicate (MessageProto) returns (MessageResponseProto);
+}
