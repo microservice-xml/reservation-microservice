@@ -14,4 +14,6 @@ import java.util.List;
 public interface AvailabilitySlotRepository extends MongoRepository<AvailabilitySlot, String> {
     @Query("{'accommodationId' : {'$in' : ?0}, 'start' :{ '$lte' : ?1, '$lte' :  ?2}, 'end' :{ '$gte' : ?1, '$gte' :  ?2}}")
     List<AvailabilitySlot> findAllByIdAndAvailabilityRange(List<Long> appointmentIds, LocalDate startDate, LocalDate endDate);
+
+    List<AvailabilitySlot> findByAccommodationId(Long accommodationId);
 }
