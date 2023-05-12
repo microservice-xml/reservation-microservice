@@ -8,6 +8,7 @@ import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.model.ReservationStatus;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.example.reservationmicroservice.repository.ReservationRepository;
+import communication.Accommodation;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;

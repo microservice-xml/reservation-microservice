@@ -1,7 +1,6 @@
 package com.example.reservationmicroservice.service;
 
 import com.example.reservationmicroservice.exception.AvailabilitySlotException;
-import com.example.reservationmicroservice.model.Accommodation;
 import com.example.reservationmicroservice.model.AvailabilitySlot;
 import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,13 +24,13 @@ public class AvailabilitySlotService {
     private void isDateRangeValidForAdd(AvailabilitySlot availabilitySlot) {
         var availabilitySlots = availabilitySlotRepository.findByAccommodationId(availabilitySlot.getAccommodationId());
         for (AvailabilitySlot as : availabilitySlots) {
-            if (areDatesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && as.getAccommodationId() == availabilitySlot.getAccommodationId()) {
+            if (areDateRangesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && as.getAccommodationId() == availabilitySlot.getAccommodationId()) {
                 throw new AvailabilitySlotException("Date range of the slot you want to create overlaps with an existing one!");
             }
         }
     }
 
-    private boolean areDatesOverlapping(LocalDate start, LocalDate end, LocalDate start2, LocalDate end2) {
+    private boolean areDateRangesOverlapping(LocalDate start, LocalDate end, LocalDate start2, LocalDate end2) {
         return !((start.isBefore(start2) && end.isBefore(start2))
                 || (start.isAfter(end2) && end.isAfter(end2)));
     }
@@ -52,7 +50,7 @@ public class AvailabilitySlotService {
     private void isDateRangeValidForEdit(AvailabilitySlot availabilitySlot) {
         var availabilitySlots = availabilitySlotRepository.findByAccommodationId(availabilitySlot.getAccommodationId());
         for (AvailabilitySlot as : availabilitySlots) {
-            if (areDatesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && !as.getId().equals(availabilitySlot.getId())) {
+            if (areDateRangesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && !as.getId().equals(availabilitySlot.getId())) {
                 throw new AvailabilitySlotException("Date range of the slot you want to create overlaps with an existing one!");
             }
         }
@@ -70,9 +68,16 @@ public class AvailabilitySlotService {
     private ArrayList<Long> getValidAccommodation(LocalDate startDate, LocalDate endDate, List<AvailabilitySlot> availabilitySlots) {
         var validAccommodation = new ArrayList<Long>();
         for (AvailabilitySlot as : availabilitySlots) {
+            if (!isDateRangeContainedInAnotherDateRange(startDate, endDate, as.getStart(), as.getEnd())) {
+                continue;
+            }
             var valid = true;
+            if (as.getReservations() == null) {
+                validAccommodation.add(as.getAccommodationId());
+                continue;
+            }
             for (Reservation res : as.getReservations()) {
-                if (areDatesOverlapping(startDate, endDate, res.getStart(), res.getEnd())) {
+                if (areDateRangesOverlapping(startDate, endDate, res.getStart(), res.getEnd())) {
                     valid = false;
                 }
             }
@@ -87,5 +92,9 @@ public class AvailabilitySlotService {
             throw new AvailabilitySlotException("There are not availability slots for this accommodation!");
         }
         return availabilitySlots;
+    }
+
+    private boolean isDateRangeContainedInAnotherDateRange(LocalDate containedStart, LocalDate containedEnd, LocalDate start, LocalDate end) {
+        return (start.isBefore(containedStart) || start.isEqual(containedStart)) && (end.isAfter(containedEnd) || end.isEqual(containedEnd));
     }
 }
