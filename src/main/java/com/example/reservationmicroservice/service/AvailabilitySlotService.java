@@ -24,7 +24,7 @@ public class AvailabilitySlotService {
     }
 
     private void isDateRangeValidForAdd(AvailabilitySlot availabilitySlot) {
-        var availabilitySlots = availabilitySlotRepository.findAll();
+        var availabilitySlots = availabilitySlotRepository.findByAccommodationId(availabilitySlot.getAccommodationId());
         for (AvailabilitySlot as : availabilitySlots) {
             if (areDatesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && as.getAccommodationId() == availabilitySlot.getAccommodationId()) {
                 throw new AvailabilitySlotException("Date range of the slot you want to create overlaps with an existing one!");
@@ -50,7 +50,7 @@ public class AvailabilitySlotService {
     }
 
     private void isDateRangeValidForEdit(AvailabilitySlot availabilitySlot) {
-        var availabilitySlots = availabilitySlotRepository.findAll();
+        var availabilitySlots = availabilitySlotRepository.findByAccommodationId(availabilitySlot.getAccommodationId());
         for (AvailabilitySlot as : availabilitySlots) {
             if (areDatesOverlapping(availabilitySlot.getStart(), availabilitySlot.getEnd(), as.getStart(), as.getEnd()) && !as.getId().equals(availabilitySlot.getId())) {
                 throw new AvailabilitySlotException("Date range of the slot you want to create overlaps with an existing one!");
