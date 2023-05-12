@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+package communication;
+import "google/protobuf/timestamp.proto";
+
+service ReservationService {
+  rpc createRequest(Reservation) returns (MessageResponse);
+  rpc findById(Id) returns (Reservation);
+  rpc findAll(EmptyMessage) returns (ListReservation);
+  rpc findAllByStatus(Status) returns (ListReservation);
+  rpc acceptReservationManual(Id) returns (MessageResponse);
+  rpc rejectRequest(Id) returns (MessageResponse);
+  rpc acceptReservationAuto(Reservation) returns(MessageResponse);
+  rpc cancel(Id) returns(MessageResponse);
+}
+
+
+enum ReservationStatus {
+    PENDING = 0;
+    ACCEPTED = 1;
+    DECLINED = 2;
+}
+
+message Reservation {
+  string id = 1;
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
+  uint64 userId = 4;
+  ReservationStatus status = 5;
+  string slotId = 6;
+  uint32 numberOfGuests = 7;
+}
+message ListReservation{
+  repeated Reservation reservations = 1;
+}
+
+message Accommodation {
+  string id = 1;
+  string city = 2;
+  uint64 accommodationId = 3;
+}
+
+message AvailabilitySlot{
+  string id = 1;
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
+  double price = 4;
+  repeated Reservation reservations = 5;
+}
+
+message Id{
+  string id = 1;
+}
+
+message Status{
+  ReservationStatus status = 1;
+}
+
+message MessageResponse{
+  string message = 1;
+}
+message EmptyMessage {
+}
+
