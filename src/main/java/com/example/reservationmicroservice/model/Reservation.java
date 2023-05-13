@@ -1,6 +1,7 @@
 package com.example.reservationmicroservice.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document
+@Builder
 public class Reservation {
     @Id
     private String id;

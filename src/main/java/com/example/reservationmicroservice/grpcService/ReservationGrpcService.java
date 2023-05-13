@@ -1,45 +1,111 @@
 package com.example.reservationmicroservice.grpcService;
 
+import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.service.ReservationService;
+import communication.ListReservation;
+import communication.MessageResponse;
 import communication.ReservationServiceGrpc;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import static com.example.reservationmicroservice.mapper.ReservationMapper.convertReservationGrpcToReservation;
+import static com.example.reservationmicroservice.mapper.ReservationMapper.convertReservationToReservationGrpc;
+import static com.example.reservationmicroservice.mapper.ReservationStatusMapper.convertReservationStatusGrpcToReservationStatus;
 
 @GrpcService
 @RequiredArgsConstructor
 public class ReservationGrpcService extends ReservationServiceGrpc.ReservationServiceImplBase {
 
     private final ReservationService reservationService;
+
     public void createRequest(communication.Reservation request,
                               io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
-        //TODO
+        reservationService.create(convertReservationGrpcToReservation(request));
+        responseObserver.onNext(MessageResponse.newBuilder().setMessage("Reservation successfully created.").build());
+        responseObserver.onCompleted();
+
     }
+
     public void findById(communication.Id request,
                          io.grpc.stub.StreamObserver<communication.Reservation> responseObserver) {
-        //TODO
+        communication.Reservation res = convertReservationToReservationGrpc(reservationService.findById(request.getId()));
+        System.out.println(res.getStatus());
+        responseObserver.onNext(convertReservationToReservationGrpc(reservationService.findById(request.getId())));
+        responseObserver.onCompleted();
     }
+
     public void findAll(communication.EmptyMessage request,
                         io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
-        //TODO
+        List<Reservation> reservations = reservationService.findAll();
+        List<communication.Reservation> shit = new ArrayList<>();
+        for(Reservation res : reservations)
+            shit.add(convertReservationToReservationGrpc(res));
+        ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
+        responseObserver.onNext(retVal);
+        responseObserver.onCompleted();
+
     }
+
     public void findAllByStatus(communication.Status request,
                                 io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
-        //TODO
+        List<Reservation> reservations = reservationService.findAllByStatus(convertReservationStatusGrpcToReservationStatus(request.getStatus()));
+        List<communication.Reservation> shit = new ArrayList<>();
+        for(Reservation res : reservations)
+            shit.add(convertReservationToReservationGrpc(res));
+        ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
+        responseObserver.onNext(retVal);
+        responseObserver.onCompleted();
     }
+
     public void acceptReservationManual(communication.Id request,
                                         io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
-        //TODO
+        MessageResponse response;
+        try {
+            reservationService.accept(request.getId());
+            response = MessageResponse.newBuilder().setMessage("Reservation successfully accepted.").build();
+        }catch (Exception e){
+            response = MessageResponse.newBuilder().setMessage(e.getMessage()).build();
+        }
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
+
     public void rejectRequest(communication.Id request,
                               io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
-        //TODO
+        MessageResponse response;
+        try {
+            reservationService.reject(request.getId());
+            response = MessageResponse.newBuilder().setMessage("Reservation successfully rejected.").build();
+        }catch (Exception e){
+            response = MessageResponse.newBuilder().setMessage(e.getMessage()).build();
+        }
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
+
     public void acceptReservationAuto(communication.Reservation request,
                                       io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
-        //TODO
+        reservationService.createAuto(convertReservationGrpcToReservation(request));
+        responseObserver.onNext(MessageResponse.newBuilder().setMessage("Reservation successfully created.").build());
+        responseObserver.onCompleted();
     }
+
     public void cancel(communication.Id request,
                        io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
-        //TODO
+        MessageResponse response;
+        try {
+            reservationService.cancel(request.getId());
+            response = MessageResponse.newBuilder().setMessage("Successfully canceled.").build();
+        }catch (Exception e){
+            response = MessageResponse.newBuilder().setMessage(e.getMessage()).build();
+        }
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+
     }
 }
