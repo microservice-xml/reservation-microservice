@@ -9,6 +9,10 @@ import com.example.reservationmicroservice.model.ReservationStatus;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.example.reservationmicroservice.repository.ReservationRepository;
 import communication.Accommodation;
+import communication.LongId;
+import communication.UserServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
@@ -99,14 +103,20 @@ public class ReservationService {
         if(reservation.getStatus().equals(ReservationStatus.DECLINED))
             return;
         if(reservation.getStart().isAfter(LocalDate.now().plusDays(1))) {
-            //TODO increment numberOfCancel in User
-
-            //TODO make availability slot
             removeReservationFromAvailabilitySlot(reservation);
+            incPenaltiesOfUser(reservation.getUserId());
             reservationRepository.deleteById(reservation.getId());
         }
         else
             throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
+    }
+
+    private void incPenaltiesOfUser(Long userId) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9093)
+                .usePlaintext()
+                .build();
+        UserServiceGrpc.UserServiceBlockingStub blockingStub = UserServiceGrpc.newBlockingStub(channel);
+        blockingStub.incPenalties(LongId.newBuilder().setId(userId).build());
     }
 
     public void createAuto(Reservation reservation) {
