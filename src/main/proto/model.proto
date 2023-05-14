@@ -13,6 +13,8 @@ service ReservationService {
   rpc rejectRequest(Id) returns (MessageResponse);
   rpc acceptReservationAuto(Reservation) returns(MessageResponse);
   rpc cancel(Id) returns(MessageResponse);
+  rpc findAllByUserId(LongId) returns (ListReservation);
+  rpc findByAccomodationId(LongId) returns (ListReservation);
 }
 
 service UserService{

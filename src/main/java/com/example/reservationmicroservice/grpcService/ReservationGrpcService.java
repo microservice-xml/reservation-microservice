@@ -23,6 +23,7 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
 
     private final ReservationService reservationService;
 
+    @Override
     public void createRequest(communication.Reservation request,
                               io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
         reservationService.create(convertReservationGrpcToReservation(request));
@@ -31,6 +32,7 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
 
     }
 
+    @Override
     public void findById(communication.Id request,
                          io.grpc.stub.StreamObserver<communication.Reservation> responseObserver) {
         communication.Reservation res = convertReservationToReservationGrpc(reservationService.findById(request.getId()));
@@ -39,11 +41,12 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
         responseObserver.onCompleted();
     }
 
+    @Override
     public void findAll(communication.EmptyMessage request,
                         io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
         List<Reservation> reservations = reservationService.findAll();
         List<communication.Reservation> shit = new ArrayList<>();
-        for(Reservation res : reservations)
+        for (Reservation res : reservations)
             shit.add(convertReservationToReservationGrpc(res));
         ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
         responseObserver.onNext(retVal);
@@ -51,43 +54,47 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
 
     }
 
+    @Override
     public void findAllByStatus(communication.Status request,
                                 io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
         List<Reservation> reservations = reservationService.findAllByStatus(convertReservationStatusGrpcToReservationStatus(request.getStatus()));
         List<communication.Reservation> shit = new ArrayList<>();
-        for(Reservation res : reservations)
+        for (Reservation res : reservations)
             shit.add(convertReservationToReservationGrpc(res));
         ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
         responseObserver.onNext(retVal);
         responseObserver.onCompleted();
     }
 
+    @Override
     public void acceptReservationManual(communication.Id request,
                                         io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
         MessageResponse response;
         try {
             reservationService.accept(request.getId());
             response = MessageResponse.newBuilder().setMessage("Reservation successfully accepted.").build();
-        }catch (Exception e){
+        } catch (Exception e) {
             response = MessageResponse.newBuilder().setMessage(e.getMessage()).build();
         }
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
+    @Override
     public void rejectRequest(communication.Id request,
                               io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
         MessageResponse response;
         try {
             reservationService.reject(request.getId());
             response = MessageResponse.newBuilder().setMessage("Reservation successfully rejected.").build();
-        }catch (Exception e){
+        } catch (Exception e) {
             response = MessageResponse.newBuilder().setMessage(e.getMessage()).build();
         }
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
+    @Override
     public void acceptReservationAuto(communication.Reservation request,
                                       io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
         reservationService.createAuto(convertReservationGrpcToReservation(request));
@@ -95,17 +102,39 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
         responseObserver.onCompleted();
     }
 
+    @Override
     public void cancel(communication.Id request,
                        io.grpc.stub.StreamObserver<communication.MessageResponse> responseObserver) {
         MessageResponse response;
         try {
             reservationService.cancel(request.getId());
             response = MessageResponse.newBuilder().setMessage("Successfully canceled.").build();
-        }catch (Exception e){
+        } catch (Exception e) {
             response = MessageResponse.newBuilder().setMessage(e.getMessage()).build();
         }
         responseObserver.onNext(response);
         responseObserver.onCompleted();
-
+    }
+    @Override
+    public void findAllByUserId(communication.LongId request,
+                                io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
+        List<Reservation> reservations = reservationService.findAllByUserId(request.getId());
+        List<communication.Reservation> shit = new ArrayList<>();
+        for (Reservation res : reservations)
+            shit.add(convertReservationToReservationGrpc(res));
+        ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
+        responseObserver.onNext(retVal);
+        responseObserver.onCompleted();
+    }
+    @Override
+    public void findByAccomodationId(communication.LongId request,
+                                     io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
+        List<Reservation> reservations = reservationService.findByAccomodationId(request.getId());
+        List<communication.Reservation> shit = new ArrayList<>();
+        for (Reservation res : reservations)
+            shit.add(convertReservationToReservationGrpc(res));
+        ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
+        responseObserver.onNext(retVal);
+        responseObserver.onCompleted();
     }
 }

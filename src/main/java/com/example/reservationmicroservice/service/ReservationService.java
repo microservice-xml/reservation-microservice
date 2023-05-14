@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -35,9 +36,9 @@ public class ReservationService {
         reservationRepository.save(reservation);
     }
 
-    public void isDateRangeInSlot(Reservation reservation){
+    public void isDateRangeInSlot(Reservation reservation) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
-        if(!((reservation.getStart().plusDays(1).isAfter(slot.getStart()) && reservation.getStart().isBefore(slot.getEnd())) && (reservation.getEnd().isAfter(slot.getStart()) && reservation.getEnd().minusDays(1).isBefore(slot.getEnd()))))
+        if (!((reservation.getStart().plusDays(1).isAfter(slot.getStart()) && reservation.getStart().isBefore(slot.getEnd())) && (reservation.getEnd().isAfter(slot.getStart()) && reservation.getEnd().minusDays(1).isBefore(slot.getEnd()))))
             throw new ReservationException("Reservation daterange is out of availability slot daterange.");
     }
 
@@ -57,7 +58,7 @@ public class ReservationService {
         rejectAllOther(reservation);
     }
 
-    private void addReservationInAvailabilitySlot(Reservation reservation){
+    private void addReservationInAvailabilitySlot(Reservation reservation) {
         //TODO reduce availability slot, add some check
         checkOverlapping(reservation);
         AvailabilitySlot as = availabilitySlotRepository.findById(reservation.getSlotId()).get();
@@ -68,16 +69,16 @@ public class ReservationService {
     private void checkOverlapping(Reservation reservation) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
 
-        if(slot.getReservations().isEmpty())
+        if (slot.getReservations().isEmpty())
             return;
 
-        for(var res : slot.getReservations()){
-            if((reservation.getStart().plusDays(1).isAfter(res.getStart()) && reservation.getStart().isBefore(res.getEnd())) || (reservation.getEnd().isAfter(res.getStart()) && reservation.getEnd().minusDays(1).isBefore(res.getEnd())) || (reservation.getStart().equals(res.getStart())) && reservation.getEnd().equals(res.getEnd()) || (reservation.getStart().isBefore(res.getStart())) && reservation.getEnd().isAfter(res.getEnd()))
+        for (var res : slot.getReservations()) {
+            if ((reservation.getStart().plusDays(1).isAfter(res.getStart()) && reservation.getStart().isBefore(res.getEnd())) || (reservation.getEnd().isAfter(res.getStart()) && reservation.getEnd().minusDays(1).isBefore(res.getEnd())) || (reservation.getStart().equals(res.getStart())) && reservation.getEnd().equals(res.getEnd()) || (reservation.getStart().isBefore(res.getStart())) && reservation.getEnd().isAfter(res.getEnd()))
                 throw new AvailabilitySlotException("Some reservation already exists");
         }
     }
 
-    private void removeReservationFromAvailabilitySlot(Reservation reservation) throws CancelException{
+    private void removeReservationFromAvailabilitySlot(Reservation reservation) throws CancelException {
         AvailabilitySlot as = availabilitySlotRepository.findById(reservation.getSlotId()).get();
         as.getReservations().remove(reservation);
         availabilitySlotRepository.save(as);
@@ -85,7 +86,7 @@ public class ReservationService {
 
     private void rejectAllOther(Reservation reservation) {
         List<Reservation> reservations = reservationRepository.allForReject(reservation.getStart(), reservation.getEnd());
-        for(var res : reservations){
+        for (var res : reservations) {
             res.setStatus(ReservationStatus.DECLINED);
             reservationRepository.save(res);
         }
@@ -93,21 +94,20 @@ public class ReservationService {
 
     public void cancel(String id) throws CancelException {
         Reservation res = reservationRepository.findById(id).get();
-        if(res.getStatus().equals(ReservationStatus.PENDING))
+        if (res.getStatus().equals(ReservationStatus.PENDING))
             reservationRepository.deleteById(id);
         else
             cancelAccepted(res);
     }
 
     private void cancelAccepted(Reservation reservation) throws CancelException {
-        if(reservation.getStatus().equals(ReservationStatus.DECLINED))
+        if (reservation.getStatus().equals(ReservationStatus.DECLINED))
             return;
-        if(reservation.getStart().isAfter(LocalDate.now().plusDays(1))) {
+        if (reservation.getStart().isAfter(LocalDate.now().plusDays(1))) {
             removeReservationFromAvailabilitySlot(reservation);
             incPenaltiesOfUser(reservation.getUserId());
             reservationRepository.deleteById(reservation.getId());
-        }
-        else
+        } else
             throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
     }
 
@@ -135,5 +135,18 @@ public class ReservationService {
 
     public List<Reservation> findAllByStatus(ReservationStatus status) {
         return reservationRepository.findAllByStatus(status);
+    }
+
+    public List<Reservation> findAllByUserId(Long id) {
+        return reservationRepository.findAllByUserId(id);
+    }
+
+    public List<Reservation> findByAccomodationId(long id) {
+        List<Reservation> allReservations = findAll();
+        List<Reservation> retVal = new ArrayList<>();
+        for (Reservation res : allReservations)
+            if (availabilitySlotRepository.findById(res.getSlotId()).get().getAccommodationId() == id)
+                retVal.add(res);
+        return retVal;
     }
 }

@@ -16,4 +16,6 @@ public interface ReservationRepository extends MongoRepository<Reservation, Stri
     List<Reservation> allForReject(LocalDate start, LocalDate end);
 
     List<Reservation> findAllByStatus(ReservationStatus status);
+
+    List<Reservation> findAllByUserId(Long id);
 }
