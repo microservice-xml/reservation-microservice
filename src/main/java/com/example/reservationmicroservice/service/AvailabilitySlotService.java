@@ -18,6 +18,7 @@ public class AvailabilitySlotService {
 
     public void add(AvailabilitySlot availabilitySlot) {
         isDateRangeValidForAdd(availabilitySlot);
+        availabilitySlot.setId(null);
         availabilitySlotRepository.save(availabilitySlot);
     }
 
