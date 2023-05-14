@@ -17,6 +17,10 @@ service ReservationService {
   rpc findByAccomodationId(LongId) returns (ListReservation);
 }
 
+service AvailabilitySlotService {
+  rpc findAllAvailabilitySlotsByAccommodationId(LongId) returns (ListAvailabilitySlotFull);
+}
+
 service UserCommunicationService {
   rpc getReservation(UserIdRequest) returns (BooleanResponse);
 }
@@ -99,6 +103,22 @@ message MessageResponse{
   string message = 1;
 }
 message EmptyMessage {
+}
+
+message ListAvailabilitySlotFull {
+  repeated AvailabilitySlotFull availabilitySlots = 1;
+}
+
+message AvailabilitySlotFull {
+  string id = 1;
+  int32 startYear = 2;
+  int32 startMonth = 3;
+  int32 startDay = 4;
+  int32 endYear = 5;
+  int32 endMonth = 6;
+  int32 endDay = 7;
+  double price = 8;
+  repeated Reservation reservations = 9;
 }
 
 message BooleanResponse {
