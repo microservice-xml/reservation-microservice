@@ -101,8 +101,10 @@ public class ReservationService {
     }
 
     private void cancelAccepted(Reservation reservation) throws CancelException {
-        if (reservation.getStatus().equals(ReservationStatus.DECLINED))
+        if (reservation.getStatus().equals(ReservationStatus.DECLINED)) {
+            reservationRepository.deleteById(reservation.getId());
             return;
+        }
         if (reservation.getStart().isAfter(LocalDate.now().plusDays(1))) {
             removeReservationFromAvailabilitySlot(reservation);
             incPenaltiesOfUser(reservation.getUserId());
@@ -145,7 +147,7 @@ public class ReservationService {
         List<Reservation> allReservations = findAll();
         List<Reservation> retVal = new ArrayList<>();
         for (Reservation res : allReservations)
-            if (availabilitySlotRepository.findById(res.getSlotId()).get().getAccommodationId() == id)
+            if (availabilitySlotRepository.findById(res.getSlotId()).get().getAccommodationId() == id && res.getStatus().equals(ReservationStatus.PENDING))
                 retVal.add(res);
         return retVal;
     }
