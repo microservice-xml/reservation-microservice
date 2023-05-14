@@ -1,13 +1,13 @@
 package com.example.reservationmicroservice.grpcService;
 
 import com.example.reservationmicroservice.service.ReservationService;
-import communication.UserCommunicationServiceGrpc;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+import communication.*;
 
 @GrpcService
 @RequiredArgsConstructor
-public class UserCommunicationGrpcService extends UserCommunicationServiceGrpc.UserCommunicationServiceImplBase {
+public class UserCommunicationGrpcService extends communication.UserCommunicationServiceGrpc.UserCommunicationServiceImplBase {
 
     private final ReservationService reservationService;
 
