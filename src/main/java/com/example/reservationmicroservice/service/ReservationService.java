@@ -151,4 +151,9 @@ public class ReservationService {
                 retVal.add(res);
         return retVal;
     }
+
+    public boolean checkReservations(long id) {
+        List<Reservation> reservations = reservationRepository.allByUserId(LocalDate.now(), id);
+        return reservations.isEmpty();
+    }
 }
