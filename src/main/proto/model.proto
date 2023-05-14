@@ -15,6 +15,9 @@ service ReservationService {
   rpc cancel(Id) returns(MessageResponse);
   rpc findAllByUserId(LongId) returns (ListReservation);
   rpc findByAccomodationId(LongId) returns (ListReservation);
+}
+
+service UserCommunicationService {
   rpc getReservation(UserIdRequest) returns (BooleanResponse);
 }
 
