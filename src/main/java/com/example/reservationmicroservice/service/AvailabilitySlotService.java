@@ -97,4 +97,18 @@ public class AvailabilitySlotService {
     private boolean isDateRangeContainedInAnotherDateRange(LocalDate containedStart, LocalDate containedEnd, LocalDate start, LocalDate end) {
         return (start.isBefore(containedStart) || start.isEqual(containedStart)) && (end.isAfter(containedEnd) || end.isEqual(containedEnd));
     }
+
+    public boolean checkForAccommodationDelete(List<Long> accommodationIds, LocalDate boundary) {
+        for (Long id : accommodationIds) {
+            var availabilitySlots = availabilitySlotRepository.findFutureReservationsForAccommodation(id, boundary);
+            if (!availabilitySlots.isEmpty()) {
+                return false;
+            }
+        }
+
+        for (Long id: accommodationIds) {
+            availabilitySlotRepository.deleteByAccommodationId(id);
+        }
+        return true;
+    }
 }
