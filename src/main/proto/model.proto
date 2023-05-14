@@ -34,6 +34,12 @@ service UserService{
 service AccommodationService {
   rpc searchByAvailabilityRange(SearchRequest) returns (SearchResponse);
   rpc checkForDelete(CheckDeleteRequest) returns (BooleanResponse);
+  rpc addAccommodationToReservation(AccommodationRes) returns (MessageResponse);
+}
+
+message AccommodationRes {
+  string city = 1;
+  uint64 accId = 2;
 }
 
 message SearchRequest {
