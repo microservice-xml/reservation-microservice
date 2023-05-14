@@ -21,12 +21,17 @@ service AvailabilitySlotService {
   rpc findAllAvailabilitySlotsByAccommodationId(LongId) returns (ListAvailabilitySlotFull);
 }
 
+service UserCommunicationService {
+  rpc getReservation(UserIdRequest) returns (BooleanResponse);
+}
+
 service UserService{
   rpc incPenalties(LongId) returns (EmptyMessage);
 }
 
 service AccommodationService {
   rpc searchByAvailabilityRange(SearchRequest) returns (SearchResponse);
+  rpc checkForDelete(CheckDeleteRequest) returns (BooleanResponse);
 }
 
 message SearchRequest {
@@ -41,6 +46,13 @@ message SearchRequest {
 
 message SearchResponse {
   repeated int64 accommodationIds = 1;
+}
+
+message CheckDeleteRequest {
+  repeated int64 accommodationIds = 1;
+  int32 startYear = 2;
+  int32 startMonth = 3;
+  int32 startDay = 4;
 }
 
 enum ReservationStatus {
@@ -107,5 +119,13 @@ message AvailabilitySlotFull {
   int32 endDay = 7;
   double price = 8;
   repeated Reservation reservations = 9;
+}
+
+message BooleanResponse {
+  bool available = 1;
+}
+
+message UserIdRequest {
+  uint64 id = 1;
 }
 

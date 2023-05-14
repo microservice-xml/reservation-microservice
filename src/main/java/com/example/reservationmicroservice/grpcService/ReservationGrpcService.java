@@ -2,6 +2,7 @@ package com.example.reservationmicroservice.grpcService;
 
 import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.service.ReservationService;
+import communication.BooleanResponse;
 import communication.ListReservation;
 import communication.MessageResponse;
 import communication.ReservationServiceGrpc;
@@ -137,4 +138,6 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
         responseObserver.onNext(retVal);
         responseObserver.onCompleted();
     }
+
+
 }
