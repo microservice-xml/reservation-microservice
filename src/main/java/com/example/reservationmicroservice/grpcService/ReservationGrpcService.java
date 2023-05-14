@@ -2,6 +2,7 @@ package com.example.reservationmicroservice.grpcService;
 
 import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.service.ReservationService;
+import communication.BooleanResponse;
 import communication.ListReservation;
 import communication.MessageResponse;
 import communication.ReservationServiceGrpc;
@@ -136,5 +137,14 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
         ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
         responseObserver.onNext(retVal);
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getReservation(communication.UserIdRequest request,
+                               io.grpc.stub.StreamObserver<communication.BooleanResponse> responseObserver) {
+                                boolean check = reservationService.checkReservations(request.getId());
+                                communication.BooleanResponse response = communication.BooleanResponse.newBuilder().setAvailable(check).build();
+                                responseObserver.onNext(response);
+                                responseObserver.onCompleted();
     }
 }

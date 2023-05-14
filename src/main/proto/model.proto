@@ -15,6 +15,7 @@ service ReservationService {
   rpc cancel(Id) returns(MessageResponse);
   rpc findAllByUserId(LongId) returns (ListReservation);
   rpc findByAccomodationId(LongId) returns (ListReservation);
+  rpc getReservation(UserIdRequest) returns (BooleanResponse);
 }
 
 service UserService{
@@ -87,5 +88,13 @@ message MessageResponse{
   string message = 1;
 }
 message EmptyMessage {
+}
+
+message BooleanResponse {
+  bool available = 1;
+}
+
+message UserIdRequest {
+  uint64 id = 1;
 }
 
