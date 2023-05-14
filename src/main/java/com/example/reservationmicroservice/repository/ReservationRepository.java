@@ -18,4 +18,7 @@ public interface ReservationRepository extends MongoRepository<Reservation, Stri
     List<Reservation> findAllByStatus(ReservationStatus status);
 
     List<Reservation> findAllByUserId(Long id);
+
+    @Query("{$and: [ {'start' : { $gt : ?0}}, {'status' : 'ACCEPTED'}, {'userId' : ?1 }]}")
+    List<Reservation> allByUserId(LocalDate start, Long userId);
 }

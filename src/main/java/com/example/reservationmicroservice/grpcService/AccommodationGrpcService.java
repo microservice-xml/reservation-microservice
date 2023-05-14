@@ -27,4 +27,13 @@ public class AccommodationGrpcService extends AccommodationServiceGrpc.Accommoda
         responseStreamObserver.onNext(searchResponse);
         responseStreamObserver.onCompleted();
     }
+
+    @Override
+    public void checkForDelete(communication.CheckDeleteRequest request,
+                               io.grpc.stub.StreamObserver<communication.BooleanResponse> responseObserver) {
+        var startDate = LocalDate.of(request.getStartYear(), request.getStartMonth(), request.getStartDay());
+        boolean check = availabilitySlotService.checkForAccommodationDelete(request.getAccommodationIdsList(), startDate);
+        responseObserver.onNext(communication.BooleanResponse.newBuilder().setAvailable(check).build());
+        responseObserver.onCompleted();
+    }
 }
