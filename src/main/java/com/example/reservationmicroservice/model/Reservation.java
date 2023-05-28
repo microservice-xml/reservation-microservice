@@ -37,4 +37,7 @@ public class Reservation {
 
     @Field
     private int numberOfGuests;
+
+    @Field
+    private Long hostId;
 }

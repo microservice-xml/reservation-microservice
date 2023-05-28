@@ -156,4 +156,8 @@ public class ReservationService {
         List<Reservation> reservations = reservationRepository.allByUserId(LocalDate.now(), id);
         return reservations.isEmpty();
     }
+
+    public List<Reservation> findAllByHostId(long hostId){
+        return reservationRepository.findAllByHostId(hostId);
+    }
 }

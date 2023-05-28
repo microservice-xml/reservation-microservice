@@ -128,6 +128,17 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
         responseObserver.onCompleted();
     }
     @Override
+    public void findAllByHostId(communication.LongId request,
+                                io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
+        List<Reservation> reservations = reservationService.findAllByHostId(request.getId());
+        List<communication.Reservation> reservationList = new ArrayList<>();
+        for (Reservation res : reservations)
+            reservationList.add(convertReservationToReservationGrpc(res));
+        ListReservation retVal = ListReservation.newBuilder().addAllReservations(reservationList).build();
+        responseObserver.onNext(retVal);
+        responseObserver.onCompleted();
+    }
+    @Override
     public void findByAccomodationId(communication.LongId request,
                                      io.grpc.stub.StreamObserver<communication.ListReservation> responseObserver) {
         List<Reservation> reservations = reservationService.findByAccomodationId(request.getId());

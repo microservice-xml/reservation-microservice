@@ -19,6 +19,7 @@ public class ReservationMapper {
                 .userId(reservation.getUserId())
                 .slotId(reservation.getSlotId())
                 .numberOfGuests(reservation.getNumberOfGuests())
+                .hostId(reservation.getHostId())
                 .build();
     }
 
@@ -31,6 +32,7 @@ public class ReservationMapper {
                 .setStart(convertLocalDateToGoogleTimestamp(reservation.getStart()))
                 .setEnd(convertLocalDateToGoogleTimestamp(reservation.getEnd()))
                 .setStatus(convertReservationStatusToReservationStatusGrpc(reservation.getStatus()))
+                .setHostId(reservation.getHostId())
                 .build();
     }
 }

@@ -15,6 +15,7 @@ service ReservationService {
   rpc cancel(Id) returns(MessageResponse);
   rpc findAllByUserId(LongId) returns (ListReservation);
   rpc findByAccomodationId(LongId) returns (ListReservation);
+  rpc findAllByHostId(LongId) returns (ListReservation);
 }
 
 service AvailabilitySlotService {
@@ -77,6 +78,7 @@ message Reservation {
   ReservationStatus status = 5;
   string slotId = 6;
   uint32 numberOfGuests = 7;
+  uint64 hostId = 8;
 }
 message ListReservation{
   repeated Reservation reservations = 1;
