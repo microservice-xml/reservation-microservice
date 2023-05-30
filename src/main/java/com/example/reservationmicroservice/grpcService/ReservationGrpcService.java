@@ -1,6 +1,7 @@
 package com.example.reservationmicroservice.grpcService;
 
 import com.example.reservationmicroservice.model.Reservation;
+import com.example.reservationmicroservice.model.ReservationStatus;
 import com.example.reservationmicroservice.service.ReservationService;
 import communication.BooleanResponse;
 import communication.ListReservation;
@@ -122,7 +123,8 @@ public class ReservationGrpcService extends ReservationServiceGrpc.ReservationSe
         List<Reservation> reservations = reservationService.findAllByUserId(request.getId());
         List<communication.Reservation> shit = new ArrayList<>();
         for (Reservation res : reservations)
-            shit.add(convertReservationToReservationGrpc(res));
+            if(res.getStatus().equals(ReservationStatus.ACCEPTED) || res.getStatus().equals(ReservationStatus.PENDING))
+                shit.add(convertReservationToReservationGrpc(res));
         ListReservation retVal = ListReservation.newBuilder().addAllReservations(shit).build();
         responseObserver.onNext(retVal);
         responseObserver.onCompleted();

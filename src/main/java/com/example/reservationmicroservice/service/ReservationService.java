@@ -8,9 +8,7 @@ import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.model.ReservationStatus;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.example.reservationmicroservice.repository.ReservationRepository;
-import communication.Accommodation;
-import communication.LongId;
-import communication.UserServiceGrpc;
+import communication.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import lombok.NoArgsConstructor;
@@ -56,6 +54,7 @@ public class ReservationService {
         addReservationInAvailabilitySlot(reservation);
         reservationRepository.save(reservation);
         rejectAllOther(reservation);
+        updateHighlighted(reservation.getHostId());
     }
 
     private void addReservationInAvailabilitySlot(Reservation reservation) {
@@ -108,7 +107,9 @@ public class ReservationService {
         if (reservation.getStart().isAfter(LocalDate.now().plusDays(1))) {
             removeReservationFromAvailabilitySlot(reservation);
             incPenaltiesOfUser(reservation.getUserId());
-            reservationRepository.deleteById(reservation.getId());
+            reservation.setStatus(ReservationStatus.CANCELED);
+            reservationRepository.save(reservation);
+            updateHighlighted(reservation.getHostId());
         } else
             throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
     }
@@ -127,6 +128,7 @@ public class ReservationService {
         checkOverlapping(reservation);
         Reservation res = reservationRepository.save(reservation);
         addReservationInAvailabilitySlot(res);
+        updateHighlighted(res.getHostId());
     }
 
     public void reject(String id) {
@@ -159,5 +161,13 @@ public class ReservationService {
 
     public List<Reservation> findAllByHostId(long hostId){
         return reservationRepository.findAllByHostId(hostId);
+    }
+
+    public void updateHighlighted(Long hostId){
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9093)
+                .usePlaintext()
+                .build();
+        ReservationServiceGrpc.ReservationServiceBlockingStub blockingStub = ReservationServiceGrpc.newBlockingStub(channel);
+        EmptyMessage message = blockingStub.calculateIsHighlighted(LongId.newBuilder().setId(hostId).build());
     }
 }

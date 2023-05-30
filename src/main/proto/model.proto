@@ -16,6 +16,7 @@ service ReservationService {
   rpc findAllByUserId(LongId) returns (ListReservation);
   rpc findByAccomodationId(LongId) returns (ListReservation);
   rpc findAllByHostId(LongId) returns (ListReservation);
+  rpc calculateIsHighlighted(LongId) returns (EmptyMessage);
 }
 
 service AvailabilitySlotService {
@@ -68,6 +69,7 @@ enum ReservationStatus {
     PENDING = 0;
     ACCEPTED = 1;
     DECLINED = 2;
+    CANCELED = 3;
 }
 
 message Reservation {
