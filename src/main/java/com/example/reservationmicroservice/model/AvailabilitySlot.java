@@ -37,4 +37,7 @@ public class AvailabilitySlot {
     @Field
     private List<Reservation> reservations;
 
+    @Field
+    private boolean deleted;
+
 }
