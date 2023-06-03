@@ -3,6 +3,7 @@ package com.example.reservationmicroservice.grpcService;
 import com.example.reservationmicroservice.model.Accommodation;
 import com.example.reservationmicroservice.service.AccommodationService;
 import com.example.reservationmicroservice.service.AvailabilitySlotService;
+import communication.AccommodationSearchResponse;
 import communication.AccommodationServiceGrpc;
 import communication.MessageResponse;
 import communication.SearchRequest;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -24,9 +27,14 @@ public class AccommodationGrpcService extends AccommodationServiceGrpc.Accommoda
     public void searchByAvailabilityRange(SearchRequest request, StreamObserver<SearchResponse> responseStreamObserver) {
         var startDate = LocalDate.of(request.getStartYear(), request.getStartMonth(), request.getStartDay());
         var endDate = LocalDate.of(request.getEndYear(), request.getEndMonth(), request.getEndDay());
-        var accommodationIds = availabilitySlotService.getByAvailabilityRange(request.getAccommodationIdsList(), startDate, endDate);
+        var accommodationSearchDtos = availabilitySlotService.getByAvailabilityRange(request.getAccommodationIdsList(), startDate, endDate); // TODO Don't just return ids, but ids + prices
 
-        var searchResponse = communication.SearchResponse.newBuilder().addAllAccommodationIds(accommodationIds).build();
+        List<AccommodationSearchResponse> responseList = new ArrayList<>();
+        for (var a: accommodationSearchDtos) {
+            responseList.add(AccommodationSearchResponse.newBuilder().setId(a.getId()).setPrice(a.getPrice()).build());
+        }
+
+        var searchResponse = communication.SearchResponse.newBuilder().addAllAccommodations(responseList).build();
 
         responseStreamObserver.onNext(searchResponse);
         responseStreamObserver.onCompleted();
