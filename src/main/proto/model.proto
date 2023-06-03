@@ -55,7 +55,12 @@ message SearchRequest {
 }
 
 message SearchResponse {
-  repeated int64 accommodationIds = 1;
+  repeated AccommodationSearchResponse accommodations = 1;
+}
+
+message AccommodationSearchResponse {
+  int64 id = 1;
+  double price = 2;
 }
 
 message CheckDeleteRequest {

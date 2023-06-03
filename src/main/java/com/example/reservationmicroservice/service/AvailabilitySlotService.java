@@ -7,6 +7,7 @@ import com.example.reservationmicroservice.event.SlotsDeleted;
 import com.example.reservationmicroservice.exception.AvailabilitySlotException;
 import com.example.reservationmicroservice.model.AvailabilitySlot;
 import com.example.reservationmicroservice.model.Reservation;
+import com.example.reservationmicroservice.model.dto.AccommodationSearchDto;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -68,24 +69,24 @@ public class AvailabilitySlotService {
         }
     }
 
-    public List<Long> getByAvailabilityRange(List<Long> appointmentIds, LocalDate startDate, LocalDate endDate) {
+    public List<AccommodationSearchDto> getByAvailabilityRange(List<Long> appointmentIds, LocalDate startDate, LocalDate endDate) {
         var availabilitySlots = availabilitySlotRepository.findAllByIdAndAvailabilityRange(appointmentIds, startDate, endDate);
         if (availabilitySlots.size() == 0) {
             throw new AvailabilitySlotException("There are no availability slots found");
         }
-        ArrayList<Long> validAccommodation = getValidAccommodation(startDate, endDate, availabilitySlots);
+        ArrayList<AccommodationSearchDto> validAccommodation = getValidAccommodation(startDate, endDate, availabilitySlots);
         return validAccommodation.stream().distinct().toList();
     }
 
-    private ArrayList<Long> getValidAccommodation(LocalDate startDate, LocalDate endDate, List<AvailabilitySlot> availabilitySlots) {
-        var validAccommodation = new ArrayList<Long>();
+    private ArrayList<AccommodationSearchDto> getValidAccommodation(LocalDate startDate, LocalDate endDate, List<AvailabilitySlot> availabilitySlots) {
+        var validAccommodation = new ArrayList<AccommodationSearchDto>(); // TODO: make this an array of accId + accPrice
         for (AvailabilitySlot as : availabilitySlots) {
             if (!isDateRangeContainedInAnotherDateRange(startDate, endDate, as.getStart(), as.getEnd())) {
                 continue;
             }
             var valid = true;
             if (as.getReservations() == null) {
-                validAccommodation.add(as.getAccommodationId());
+                validAccommodation.add(AccommodationSearchDto.builder().id(as.getAccommodationId()).price(as.getPrice()).build());
                 continue;
             }
             for (Reservation res : as.getReservations()) {
@@ -93,7 +94,7 @@ public class AvailabilitySlotService {
                     valid = false;
                 }
             }
-            if (valid) validAccommodation.add(as.getAccommodationId());
+            if (valid) validAccommodation.add(AccommodationSearchDto.builder().id(as.getAccommodationId()).price(as.getPrice()).build());
         }
         return validAccommodation;
     }
