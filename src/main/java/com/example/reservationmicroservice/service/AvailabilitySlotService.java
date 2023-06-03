@@ -1,13 +1,20 @@
 package com.example.reservationmicroservice.service;
 
+import com.example.reservationmicroservice.event.BaseEvent;
+import com.example.reservationmicroservice.event.EventType;
+import com.example.reservationmicroservice.event.SlotsDeleteFailed;
+import com.example.reservationmicroservice.event.SlotsDeleted;
 import com.example.reservationmicroservice.exception.AvailabilitySlotException;
 import com.example.reservationmicroservice.model.AvailabilitySlot;
 import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +22,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AvailabilitySlotService {
     private final AvailabilitySlotRepository availabilitySlotRepository;
+
+    private final ObjectMapper objectMapper;
+
+    private final RabbitTemplate rabbitTemplate;
 
     public void add(AvailabilitySlot availabilitySlot) {
         isDateRangeValidForAdd(availabilitySlot);
@@ -103,6 +114,7 @@ public class AvailabilitySlotService {
         for (Long id : accommodationIds) {
             var availabilitySlots = availabilitySlotRepository.findFutureReservationsForAccommodation(id, boundary);
             if (!availabilitySlots.isEmpty()) {
+                publishMessage(new SlotsDeleteFailed(LocalDateTime.now(), EventType.DELETE_SLOT_FAILED, accommodationIds));
                 return false;
             }
         }
@@ -110,6 +122,17 @@ public class AvailabilitySlotService {
         for (Long id: accommodationIds) {
             availabilitySlotRepository.deleteByAccommodationId(id);
         }
+
+        publishMessage(new SlotsDeleted(LocalDateTime.now(), EventType.SLOTS_DELETED));
         return true;
+    }
+
+    public void publishMessage(BaseEvent event){ // Assuming you have an instance of MyMessage
+        try {
+            String json = objectMapper.writeValueAsString(event);
+            rabbitTemplate.convertAndSend("myQueue", json);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
