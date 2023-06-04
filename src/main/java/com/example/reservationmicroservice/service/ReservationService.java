@@ -1,11 +1,13 @@
 package com.example.reservationmicroservice.service;
 
+import com.example.reservationmicroservice.dto.NotificationDto;
 import com.example.reservationmicroservice.exception.AvailabilitySlotException;
 import com.example.reservationmicroservice.exception.CancelException;
 import com.example.reservationmicroservice.exception.ReservationException;
 import com.example.reservationmicroservice.model.AvailabilitySlot;
 import com.example.reservationmicroservice.model.Reservation;
 import com.example.reservationmicroservice.model.ReservationStatus;
+import com.example.reservationmicroservice.repository.AccommodationRepository;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.example.reservationmicroservice.repository.ReservationRepository;
 import communication.*;
@@ -14,8 +16,11 @@ import io.grpc.ManagedChannelBuilder;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -27,13 +32,20 @@ import java.util.List;
 public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final AccommodationRepository accommodationRepository;
 
     public void create(Reservation reservation) {
         isDateRangeInSlot(reservation);
         reservation.setStatus(ReservationStatus.PENDING);
         reservationRepository.save(reservation);
+        createNotification(reservation.getHostId(),"You have new reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity());
     }
 
+    private void createNotification(Long userId, String message) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpEntity<NotificationDto> requestBody = new HttpEntity<>(NotificationDto.builder().userId(userId).message(message).build());
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:8088/notification", HttpMethod.POST,requestBody,String.class);
+    }
     public void isDateRangeInSlot(Reservation reservation) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
         if (!((reservation.getStart().plusDays(1).isAfter(slot.getStart()) && reservation.getStart().isBefore(slot.getEnd())) && (reservation.getEnd().isAfter(slot.getStart()) && reservation.getEnd().minusDays(1).isBefore(slot.getEnd()))))
@@ -55,6 +67,7 @@ public class ReservationService {
         reservationRepository.save(reservation);
         rejectAllOther(reservation);
         updateHighlighted(reservation.getHostId());
+        createNotification(reservation.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is ACCEPTED.");
     }
 
     private void addReservationInAvailabilitySlot(Reservation reservation) {
@@ -88,6 +101,7 @@ public class ReservationService {
         for (var res : reservations) {
             res.setStatus(ReservationStatus.DECLINED);
             reservationRepository.save(res);
+            createNotification(res.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is DECLINED.");
         }
     }
 
@@ -110,6 +124,7 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.CANCELED);
             reservationRepository.save(reservation);
             updateHighlighted(reservation.getHostId());
+            createNotification(reservation.getHostId(),"Someone canceled the reservation from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity());
         } else
             throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
     }
