@@ -38,12 +38,12 @@ public class ReservationService {
         isDateRangeInSlot(reservation);
         reservation.setStatus(ReservationStatus.PENDING);
         reservationRepository.save(reservation);
-        createNotification(reservation.getHostId(),"You have new reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity());
+        createNotification(reservation.getHostId(),"You have new reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(), "newReservation");
     }
 
-    private void createNotification(Long userId, String message) {
+    private void createNotification(Long userId, String message, String type) {
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<NotificationDto> requestBody = new HttpEntity<>(NotificationDto.builder().userId(userId).message(message).build());
+        HttpEntity<NotificationDto> requestBody = new HttpEntity<>(NotificationDto.builder().userId(userId).type(type).message(message).build());
         ResponseEntity<String> response = restTemplate.exchange("http://localhost:8088/notification", HttpMethod.POST,requestBody,String.class);
     }
     public void isDateRangeInSlot(Reservation reservation) {
@@ -67,7 +67,7 @@ public class ReservationService {
         reservationRepository.save(reservation);
         rejectAllOther(reservation);
         updateHighlighted(reservation.getHostId());
-        createNotification(reservation.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is ACCEPTED.");
+        createNotification(reservation.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is ACCEPTED.", "reservationAnswer");
     }
 
     private void addReservationInAvailabilitySlot(Reservation reservation) {
@@ -101,7 +101,7 @@ public class ReservationService {
         for (var res : reservations) {
             res.setStatus(ReservationStatus.DECLINED);
             reservationRepository.save(res);
-            createNotification(res.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is DECLINED.");
+            createNotification(res.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is DECLINED.","reservationAnswer");
         }
     }
 
@@ -124,7 +124,7 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.CANCELED);
             reservationRepository.save(reservation);
             updateHighlighted(reservation.getHostId());
-            createNotification(reservation.getHostId(),"Someone canceled the reservation from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity());
+            createNotification(reservation.getHostId(),"Someone canceled the reservation from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(),"cancelReservation");
         } else
             throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
     }
@@ -147,9 +147,10 @@ public class ReservationService {
     }
 
     public void reject(String id) {
-        Reservation res = findById(id);
-        res.setStatus(ReservationStatus.DECLINED);
-        reservationRepository.save(res);
+        Reservation reservation = findById(id);
+        reservation.setStatus(ReservationStatus.DECLINED);
+        reservationRepository.save(reservation);
+        createNotification(reservation.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is DECLINED.","reservationAnswer");
     }
 
     public List<Reservation> findAllByStatus(ReservationStatus status) {

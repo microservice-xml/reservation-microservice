@@ -14,4 +14,6 @@ public class NotificationDto {
     private Long userId;
 
     private String message;
+
+    private String type;
 }
