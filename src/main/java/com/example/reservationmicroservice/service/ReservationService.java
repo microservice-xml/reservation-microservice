@@ -16,6 +16,7 @@ import io.grpc.ManagedChannelBuilder;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,9 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final AccommodationRepository accommodationRepository;
+
+    @Value("${user-api.grpc.address}")
+    private String userApiGrpcAddress;
 
     public void create(Reservation reservation) {
         isDateRangeInSlot(reservation);
@@ -130,11 +134,14 @@ public class ReservationService {
     }
 
     private void incPenaltiesOfUser(Long userId) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9093)
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(userApiGrpcAddress, 9093)
                 .usePlaintext()
                 .build();
         UserServiceGrpc.UserServiceBlockingStub blockingStub = UserServiceGrpc.newBlockingStub(channel);
         blockingStub.incPenalties(LongId.newBuilder().setId(userId).build());
+        if (channel != null && !channel.isShutdown()) {
+            channel.shutdown();
+        }
     }
 
     public void createAuto(Reservation reservation) {
@@ -180,10 +187,13 @@ public class ReservationService {
     }
 
     public void updateHighlighted(Long hostId){
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9093)
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(userApiGrpcAddress, 9093)
                 .usePlaintext()
                 .build();
         ReservationServiceGrpc.ReservationServiceBlockingStub blockingStub = ReservationServiceGrpc.newBlockingStub(channel);
         EmptyMessage message = blockingStub.calculateIsHighlighted(LongId.newBuilder().setId(hostId).build());
+        if (channel != null && !channel.isShutdown()) {
+            channel.shutdown();
+        }
     }
 }

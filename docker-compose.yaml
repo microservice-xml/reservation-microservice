@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  reservation-api:
+    build: .
+    restart: always
+    ports:
+      - 8085:8085
+    environment:
+      - USER_API_GRPC_ADDRESS=user-api
+
+networks:
+  default:
+    name: local-env_default
