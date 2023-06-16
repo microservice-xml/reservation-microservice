@@ -11,6 +11,8 @@ import com.example.reservationmicroservice.model.dto.AccommodationSearchDto;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +29,13 @@ public class AvailabilitySlotService {
     private final ObjectMapper objectMapper;
 
     private final RabbitTemplate rabbitTemplate;
+    private Logger logger = LoggerFactory.getLogger(AvailabilitySlotService.class);
 
     public void add(AvailabilitySlot availabilitySlot) {
         isDateRangeValidForAdd(availabilitySlot);
         availabilitySlot.setId(null);
-        availabilitySlotRepository.save(availabilitySlot);
+        AvailabilitySlot as = availabilitySlotRepository.save(availabilitySlot);
+        logger.info("Successfully created availability slot. [ID: %s]", as.getId());
     }
 
     private void isDateRangeValidForAdd(AvailabilitySlot availabilitySlot) {
@@ -57,7 +61,8 @@ public class AvailabilitySlotService {
         oldAvailabilitySlot.setPrice(availabilitySlot.getPrice());
         oldAvailabilitySlot.setStart(availabilitySlot.getStart());
         oldAvailabilitySlot.setEnd(availabilitySlot.getEnd());
-        availabilitySlotRepository.save(oldAvailabilitySlot);
+        AvailabilitySlot as = availabilitySlotRepository.save(oldAvailabilitySlot);
+        logger.info("Successfully edit availability slot. [ID: %s]", as.getId());
     }
 
     private void isDateRangeValidForEdit(AvailabilitySlot availabilitySlot) {
@@ -94,7 +99,8 @@ public class AvailabilitySlotService {
                     valid = false;
                 }
             }
-            if (valid) validAccommodation.add(AccommodationSearchDto.builder().id(as.getAccommodationId()).price(as.getPrice()).build());
+            if (valid)
+                validAccommodation.add(AccommodationSearchDto.builder().id(as.getAccommodationId()).price(as.getPrice()).build());
         }
         return validAccommodation;
     }
@@ -120,7 +126,7 @@ public class AvailabilitySlotService {
             }
         }
 
-        for (Long id: accommodationIds) {
+        for (Long id : accommodationIds) {
             availabilitySlotRepository.deleteByAccommodationId(id);
         }
 
@@ -128,7 +134,7 @@ public class AvailabilitySlotService {
         return true;
     }
 
-    public void publishMessage(BaseEvent event){ // Assuming you have an instance of MyMessage
+    public void publishMessage(BaseEvent event) { // Assuming you have an instance of MyMessage
         try {
             String json = objectMapper.writeValueAsString(event);
             rabbitTemplate.convertAndSend("myQueue", json);

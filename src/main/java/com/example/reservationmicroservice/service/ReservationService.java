@@ -16,6 +16,8 @@ import io.grpc.ManagedChannelBuilder;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -34,26 +36,30 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final AccommodationRepository accommodationRepository;
-
+    private Logger logger = LoggerFactory.getLogger(AvailabilitySlotService.class);
     @Value("${user-api.grpc.address}")
     private String userApiGrpcAddress;
 
     public void create(Reservation reservation) {
         isDateRangeInSlot(reservation);
         reservation.setStatus(ReservationStatus.PENDING);
-        reservationRepository.save(reservation);
-        createNotification(reservation.getHostId(),"You have new reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(), "newReservation");
+        Reservation res = reservationRepository.save(reservation);
+        logger.info("Successfully created reservation request. [ID: %s]", res.getId());
+        createNotification(reservation.getHostId(), "You have new reservation request from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(), "newReservation");
     }
 
     private void createNotification(Long userId, String message, String type) {
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<NotificationDto> requestBody = new HttpEntity<>(NotificationDto.builder().userId(userId).type(type).message(message).build());
-        ResponseEntity<String> response = restTemplate.exchange("http://localhost:8088/notification", HttpMethod.POST,requestBody,String.class);
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:8088/notification", HttpMethod.POST, requestBody, String.class);
     }
+
     public void isDateRangeInSlot(Reservation reservation) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
-        if (!((reservation.getStart().plusDays(1).isAfter(slot.getStart()) && reservation.getStart().isBefore(slot.getEnd())) && (reservation.getEnd().isAfter(slot.getStart()) && reservation.getEnd().minusDays(1).isBefore(slot.getEnd()))))
+        if (!((reservation.getStart().plusDays(1).isAfter(slot.getStart()) && reservation.getStart().isBefore(slot.getEnd())) && (reservation.getEnd().isAfter(slot.getStart()) && reservation.getEnd().minusDays(1).isBefore(slot.getEnd())))) {
+            logger.warn("Reservation daterange is out of availability slot daterange.");
             throw new ReservationException("Reservation daterange is out of availability slot daterange.");
+        }
     }
 
     public Reservation findById(String id) {
@@ -69,9 +75,10 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.ACCEPTED);
         addReservationInAvailabilitySlot(reservation);
         reservationRepository.save(reservation);
+        logger.info("Successfully accept reservation request. [ID: %s]", id);
         rejectAllOther(reservation);
         updateHighlighted(reservation.getHostId());
-        createNotification(reservation.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is ACCEPTED.", "reservationAnswer");
+        createNotification(reservation.getUserId(), "Your reservation request from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() + " is ACCEPTED.", "reservationAnswer");
     }
 
     private void addReservationInAvailabilitySlot(Reservation reservation) {
@@ -105,7 +112,7 @@ public class ReservationService {
         for (var res : reservations) {
             res.setStatus(ReservationStatus.DECLINED);
             reservationRepository.save(res);
-            createNotification(res.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is DECLINED.","reservationAnswer");
+            createNotification(res.getUserId(), "Your reservation request from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() + " is DECLINED.", "reservationAnswer");
         }
     }
 
@@ -128,7 +135,7 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.CANCELED);
             reservationRepository.save(reservation);
             updateHighlighted(reservation.getHostId());
-            createNotification(reservation.getHostId(),"Someone canceled the reservation from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(),"cancelReservation");
+            createNotification(reservation.getHostId(), "Someone canceled the reservation from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(), "cancelReservation");
         } else
             throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
     }
@@ -149,6 +156,7 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.ACCEPTED);
         checkOverlapping(reservation);
         Reservation res = reservationRepository.save(reservation);
+        logger.info("Successfully created reservation. [ID: %s]", res.getId());
         addReservationInAvailabilitySlot(res);
         updateHighlighted(res.getHostId());
     }
@@ -157,7 +165,8 @@ public class ReservationService {
         Reservation reservation = findById(id);
         reservation.setStatus(ReservationStatus.DECLINED);
         reservationRepository.save(reservation);
-        createNotification(reservation.getUserId(),"Your reservation request from " +reservation.getStart() +" to "+reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() +" is DECLINED.","reservationAnswer");
+        logger.info("Successfully rejected reservation request. [ID: %s]", id);
+        createNotification(reservation.getUserId(), "Your reservation request from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() + " is DECLINED.", "reservationAnswer");
     }
 
     public List<Reservation> findAllByStatus(ReservationStatus status) {
@@ -182,11 +191,11 @@ public class ReservationService {
         return reservations.isEmpty();
     }
 
-    public List<Reservation> findAllByHostId(long hostId){
+    public List<Reservation> findAllByHostId(long hostId) {
         return reservationRepository.findAllByHostId(hostId);
     }
 
-    public void updateHighlighted(Long hostId){
+    public void updateHighlighted(Long hostId) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress(userApiGrpcAddress, 9093)
                 .usePlaintext()
                 .build();
