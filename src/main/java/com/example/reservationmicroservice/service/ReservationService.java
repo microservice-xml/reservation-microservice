@@ -1,6 +1,8 @@
 package com.example.reservationmicroservice.service;
 
 import com.example.reservationmicroservice.dto.NotificationDto;
+import com.example.reservationmicroservice.dto.ReservationMessage;
+import com.example.reservationmicroservice.event.EventType;
 import com.example.reservationmicroservice.exception.AvailabilitySlotException;
 import com.example.reservationmicroservice.exception.CancelException;
 import com.example.reservationmicroservice.exception.ReservationException;
@@ -10,12 +12,15 @@ import com.example.reservationmicroservice.model.ReservationStatus;
 import com.example.reservationmicroservice.repository.AccommodationRepository;
 import com.example.reservationmicroservice.repository.AvailabilitySlotRepository;
 import com.example.reservationmicroservice.repository.ReservationRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import communication.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import jdk.jfr.Event;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +41,10 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final AccommodationRepository accommodationRepository;
+    private final ObjectMapper objectMapper;
+    private final RabbitTemplate rabbitTemplate;
     private Logger logger = LoggerFactory.getLogger(AvailabilitySlotService.class);
+
     @Value("${user-api.grpc.address}")
     private String userApiGrpcAddress;
 
@@ -79,6 +87,21 @@ public class ReservationService {
         rejectAllOther(reservation);
         updateHighlighted(reservation.getHostId());
         createNotification(reservation.getUserId(), "Your reservation request from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity() + " is ACCEPTED.", "reservationAnswer");
+        AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
+        publishMessage(reservation, slot.getAccommodationId(), EventType.USER_STAYED);
+    }
+
+    public void publishMessage(Reservation reservation, long accommodationId, EventType type) {
+        try {
+            String json = objectMapper.writeValueAsString(createReservationMessage(reservation.getUserId(), accommodationId, type));
+            rabbitTemplate.convertAndSend("recommendationQueue", json);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public ReservationMessage createReservationMessage(long userId, long accommodationId, EventType type) {
+        return new ReservationMessage(userId, accommodationId, type);
     }
 
     private void addReservationInAvailabilitySlot(Reservation reservation) {
@@ -135,7 +158,9 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.CANCELED);
             reservationRepository.save(reservation);
             updateHighlighted(reservation.getHostId());
-            createNotification(reservation.getHostId(), "Someone canceled the reservation from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(), "cancelReservation");
+            AvailabilitySlot slot = availabilitySlotRepository.findById(reservation.getSlotId()).get();
+            publishMessage(reservation, slot.getAccommodationId(), EventType.RESERVATION_CANCELED);
+            createNotification(reservation.getHostId(),"Someone canceled the reservation from " + reservation.getStart() + " to " + reservation.getEnd() + " at " + accommodationRepository.findByAccommodationId(availabilitySlotRepository.findById(reservation.getSlotId()).get().getAccommodationId()).get().getCity(), "cancelReservation");
         } else
             throw new CancelException("You can't cancel your reservation now, there's less than a day left.");
     }
