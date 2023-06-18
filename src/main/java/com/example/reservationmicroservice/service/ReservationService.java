@@ -59,7 +59,7 @@ public class ReservationService {
     private void createNotification(Long userId, String message, String type) {
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<NotificationDto> requestBody = new HttpEntity<>(NotificationDto.builder().userId(userId).type(type).message(message).build());
-        ResponseEntity<String> response = restTemplate.exchange("http://localhost:8088/notification", HttpMethod.POST, requestBody, String.class);
+        ResponseEntity<String> response = restTemplate.exchange("http://notification-api:8088/notification", HttpMethod.POST, requestBody, String.class);
     }
 
     public void isDateRangeInSlot(Reservation reservation) {
