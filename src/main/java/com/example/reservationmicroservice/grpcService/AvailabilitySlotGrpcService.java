@@ -7,6 +7,8 @@ import communication.EmptyMessage;
 import communication.ListAvailabilitySlotFull;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +20,12 @@ import static com.example.reservationmicroservice.mapper.AvailabilitySlotMapper.
 @RequiredArgsConstructor
 public class AvailabilitySlotGrpcService extends AvailabilitySlotServiceGrpc.AvailabilitySlotServiceImplBase {
     private final AvailabilitySlotService availabilitySlotService;
+    private Logger logger = LoggerFactory.getLogger(AvailabilitySlotGrpcService.class);
 
     @Override
     public void findAllAvailabilitySlotsByAccommodationId(communication.LongId request,
                                                           io.grpc.stub.StreamObserver<communication.ListAvailabilitySlotFull> responseObserver) {
+        logger.trace("Request to find all availability slots for accommodation with id {} was made", request.getId());
         List<com.example.reservationmicroservice.model.AvailabilitySlot> availabilitySlots = availabilitySlotService.getAllByAccommodationId(request.getId());
         List<communication.AvailabilitySlotFull> availabilitySlotFulls = new ArrayList<>();
         for (com.example.reservationmicroservice.model.AvailabilitySlot as: availabilitySlots) {
@@ -35,6 +39,7 @@ public class AvailabilitySlotGrpcService extends AvailabilitySlotServiceGrpc.Ava
     @Override
     public void add(communication.AvailabilitySlotFull request,
                                                           io.grpc.stub.StreamObserver<communication.EmptyMessage> responseObserver) {
+        logger.trace("Request to add an availability slot for accommodation with id {} was made", request.getId());
         availabilitySlotService.add(convertAvailabilitySlotGrpcToAvailabilitySlot(request));
         responseObserver.onNext(EmptyMessage.newBuilder().build());
         responseObserver.onCompleted();
@@ -43,6 +48,7 @@ public class AvailabilitySlotGrpcService extends AvailabilitySlotServiceGrpc.Ava
     @Override
     public void edit(communication.AvailabilitySlotFull request,
                     io.grpc.stub.StreamObserver<communication.EmptyMessage> responseObserver) {
+        logger.trace("Request to edit an availability slot for accommodation with id {} was made", request.getId());
         availabilitySlotService.edit(convertAvailabilitySlotGrpcToAvailabilitySlot(request));
         responseObserver.onNext(EmptyMessage.newBuilder().build());
         responseObserver.onCompleted();
